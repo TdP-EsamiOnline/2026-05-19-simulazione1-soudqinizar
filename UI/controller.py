@@ -9,7 +9,12 @@ class Controller:
         self._model = model
 
     def fillDDGenre(self):
-        pass
+
+        genre = self._model.getAllGenre()
+        genreDD = list(map(lambda x: ft.dropdown.Option(x), genre))
+        self._view._ddGenre.options = genreDD
+        self._view.update_page()
+
 
     def handleCreaGrafo(self, e):
         pass
