@@ -15,7 +15,7 @@ class View(ft.UserControl):
         self._title = None
         self.txt_name = None
         self.btn_hello = None
-        self._txtResult = None
+        self.txt_result = None
         self.txt_container = None
 
     def load_interface(self):
@@ -34,15 +34,15 @@ class View(ft.UserControl):
         self._page.controls.append(row1)
 
         self._ddArtist = ft.Dropdown(label="Artist", width=250)
-        self._btnCreaGrafo = ft.ElevatedButton(text="Trova Cammino", on_click=self._controller.handleCammino, width=250)
+        self._btnCreaGrafo2 = ft.ElevatedButton(text="Trova Cammino", on_click=self._controller.handleCammino, width=250)
 
-        row2 = ft.Row([self._ddArtist, self._btnCreaGrafo],
+        row2 = ft.Row([self._ddArtist, self._btnCreaGrafo2],
                       alignment=ft.MainAxisAlignment.CENTER)
         self._page.controls.append(row2)
 
         # List View where the reply is printed
-        self._txtResult = ft.ListView(expand=1, spacing=10, padding=20, auto_scroll=True)
-        self._page.controls.append(self._txtResult)
+        self.txt_result = ft.ListView(expand=1, spacing=10, padding=20, auto_scroll=True)
+        self._page.controls.append(self.txt_result)
         self._page.update()
 
     @property

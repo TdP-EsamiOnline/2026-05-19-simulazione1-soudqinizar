@@ -10,4 +10,4 @@ class Genre:
         return f"{self.Name}"
 
     def __hash__(self):
-        return hash(self.Name)
+        return hash(self.GenreId)

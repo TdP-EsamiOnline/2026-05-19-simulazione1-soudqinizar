@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Genre:
+class Artist:
     ArtistId: int
     Name: str
 
@@ -10,4 +10,4 @@ class Genre:
         return f"{self.Name}"
 
     def __hash__(self):
-        return hash(self.Name)
+        return hash(self.ArtistId)

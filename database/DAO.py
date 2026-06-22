@@ -1,4 +1,6 @@
 from database.DB_connect import DBConnect
+from model.artist import Artist
+from model.genre import Genre
 
 
 class DAO():
@@ -12,79 +14,103 @@ class DAO():
         result = []
 
         cursor = conn.cursor(dictionary=True)
-        query = """select name from genre g """
+        query = """select * 
+                    from genre g """
 
         cursor.execute(query)
 
         for row in cursor:
-            result.append(row["name"])
+            result.append(Genre(**row))
 
         cursor.close()
         conn.close()
         return result
+
     @staticmethod
-    def getVerticiPerGenere(genre_name):
+    def getAllNodes(genre):
         conn = DBConnect.get_connection()
+
         result = []
+
         cursor = conn.cursor(dictionary=True)
-        # Uniamo anche la tabella genre 'g' per filtrare direttamente tramite il nome stringa
-        query = """
-                    SELECT DISTINCT a.ArtistId, a.Name
-            FROM artist a
-            JOIN album al ON a.ArtistId = al.ArtistId
-            JOIN track t ON al.AlbumId = t.AlbumId
-            WHERE t.GenreId = %s"
-            ORDER BY a.Name
-                    """
-        cursor.execute(query, (genre_name,))
+        query = """select distinct(a.ArtistId), a.Name 
+                    from artist a , album a2 , track t 
+                    where a.ArtistId = a2.ArtistId 
+                    and a2.AlbumId = t.AlbumId 
+                    and t.GenreId = %s"""
+
+        cursor.execute(query, (genre,))
+
         for row in cursor:
-            result.append(row["Name"])
+            result.append(Artist(**row))
+
         cursor.close()
         conn.close()
         return result
 
     @staticmethod
-    def getArtistiPerCliente():
-        conn = DBConnect.get_connection()
-        result = {}
-        cursor = conn.cursor(dictionary=True)
-        query = """
-        SELECT i.CustomerId, al.ArtistId
-        FROM invoice i
-        JOIN invoiceline il ON i.InvoiceId = il.InvoiceId
-        JOIN track t ON il.TrackId = t.TrackId
-        JOIN album al ON t.AlbumId = al.AlbumId
-        GROUP BY i.CustomerId, al.ArtistId
-            """
-        cursor.execute(query)
-        for row in cursor:
-            cust_id = row["CustomerId"]
-            art_id = row["ArtistId"]
-        if cust_id not in result:
-            result[cust_id] = set()
-            result[cust_id].add(art_id)
-        cursor.close()
-
-    @staticmethod
-    def getPopolaritaArtisti():
+    def getEdges(genre):
         conn = DBConnect.get_connection()
 
-        result = {}
+        result = []
+
         cursor = conn.cursor(dictionary=True)
-        query = """
-        SELECT a.ArtistId, SUM(il.Quantity) as Popolarita
-        FROM artist a
-        JOIN album al ON a.ArtistId = al.ArtistId
-        JOIN track t ON al.AlbumId = t.AlbumId
-        JOIN invoiceline il ON t.TrackId = il.TrackId
-        GROUP BY a.ArtistId
-        """
-        cursor.execute(query)
+        query = """with ca as (
+                    select distinct inv.CustomerId as cust, a.ArtistId as art
+                    from album a, track t, invoiceline il, invoice inv
+                    where a.AlbumId = t.AlbumId
+                    and t.TrackId = il.TrackId
+                    and il.InvoiceId = inv.InvoiceId
+                    and t.GenreId = %s
+                ),
+                pop as (
+                    select a.ArtistId as art, sum(il.Quantity) as p
+                    from album a, track t, invoiceline il
+                    where a.AlbumId = t.AlbumId
+                    and t.TrackId = il.TrackId
+                    and t.GenreId = %s
+                    group by a.ArtistId
+                )
+                select distinct ca1.art as art1, ca2.art as art2,
+                       p1.p as pop1, p2.p as pop2,
+                       p1.p + p2.p as peso
+                from ca ca1, ca ca2, pop p1, pop p2
+                where ca1.cust = ca2.cust
+                and ca1.art < ca2.art
+                and p1.art = ca1.art
+                and p2.art = ca2.art"""
+
+        cursor.execute(query, (genre,genre,))
+
         for row in cursor:
-            result[row["ArtistId"]] = int(row["Popolarita"])
+            result.append((row["art1"],row["art2"],row["pop1"],row["pop2"], row["peso"]))
+
         cursor.close()
         conn.close()
         return result
+
+    @staticmethod
+    def getFillArtist(genre):
+        conn = DBConnect.get_connection()
+
+        result = []
+
+        cursor = conn.cursor(dictionary=True)
+        query = """select distinct(a.ArtistId), a.Name 
+                    from artist a , album a2 , track t 
+                    where a2.ArtistId = a.ArtistId 
+                    and t.AlbumId = a2.AlbumId 
+                    and t.GenreId = %s"""
+
+        cursor.execute(query, (genre,))
+
+        for row in cursor:
+            result.append(Artist(**row))
+
+        cursor.close()
+        conn.close()
+        return result
+
 
 
 

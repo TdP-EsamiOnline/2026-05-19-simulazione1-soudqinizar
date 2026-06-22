@@ -9,58 +9,52 @@ class Controller:
         self._model = model
 
     def fillDDGenre(self):
-
-        genre = self._model.getAllGenre()
-        genreDD = list(map(lambda x: ft.dropdown.Option(x), genre))
-        self._view._ddGenre.options = genreDD
+        self._genreMap = {}
+        generi = self._model.fillGenre()
+        for g in generi:
+            self._genreMap[str(g.GenreId)] = g
+            self._view._ddGenre.options.append(
+                ft.dropdown.Option(key=g.GenreId, text=g.Name)
+            )
         self._view.update_page()
 
-
     def handleCreaGrafo(self, e):
-        self._view._txtResult.controls.clear()
+        self._view.txt_result.controls.clear()
+        genre = self._view._ddGenre.value
+        self._model.buildGraph(genre)
+        print("NODI:", self._model.getNumNodes(), "ARCHI:", self._model.getNumEdges())
+        self._view.txt_result.controls.append(ft.Text("Grafo correttamente creato", color="green"))
+        self._view.txt_result.controls.append(ft.Text(f"Num nodi: {self._model.getNumNodes()}"))
+        self._view.txt_result.controls.append(ft.Text(f"Num Archi: {self._model.getNumEdges()}"))
+        artista,influenza = self._model.getInfluenza()
+        self._view.txt_result.controls.append(ft.Text(f"L'artista più influente : {artista}, con influenza: {influenza}", color="green"))
+        artist = self._model.fillArtist(genre)
 
-        # Ora questo conterrà direttamente una stringa come "Rock"
-        genere_selezionato = self._view._ddGenre.value
-
-        if genere_selezionato is None:
-            self._view._txtResult.controls.append(ft.Text("Errore: Seleziona un genere dal menù a tendina.", color="red"))
-            self._view.update_page()
-            return
-
-        try:
-            # Passiamo direttamente la stringa al modello
-            self._model.creaGrafo(genere_selezionato)
-
-            # Statistiche base
-            n_v, n_a = self._model.getInfoGrafo()
-            self._view._txtResult.controls.append(ft.Text(f"Grafo creato correttamente per il genere {genere_selezionato}!"))
-            self._view._txtResult.controls.append(ft.Text(f"Numero di vertici: {n_v}"))
-            self._view._txtResult.controls.append(ft.Text(f"Numero di archi: {n_a}"))
+        for a in artist:
+            self._view._ddArtist.options.append(
+                ft.dropdown.Option(key=a.ArtistId, text=a.Name)
+            )
 
 
-            # Artista con maggiore influenza
-            nome_top, infl = self._model.getArtistaMaggioreInfluenza()
-            if nome_top:
-                self._view._txtResult.controls.append(
-                    ft.Text(f"\nArtista con maggiore influenza: {nome_top} (Influenza: {int(infl)})",
-                            weight=ft.FontWeight.BOLD))
-
-            # Top 5 archi
-            top5 = self._model.getTop5Archi()
-            if top5:
-                self._view._txtResult.controls.append(ft.Text("\nI 5 archi con peso maggiore:"))
-                for arco_str in top5:
-                    self._view._txtResult.controls.append(ft.Text(arco_str))
-            else:
-                self._view._txtResult.controls.append(ft.Text("\nNessun arco presente nel grafo."))
-
-            self._view.update_page()
-
-        except Exception as ex:
-            self._view._txtResult.controls.clear()
-            self._view._txtResult.controls.append(ft.Text(f"Si è verificato un errore: {str(ex)}", color="red"))
-            self._view.update_page()
+        self._view.update_page()
 
     def handleCammino(self, e):
-        pass
+        self._view.txt_result.controls.clear()
+        artista = self._view._ddArtist.value
+        soluzione = self._model.bestPath(artista)
+
+        self._view.txt_result.controls.append(
+            ft.Text(f"Il percorso trovato percorre {len(soluzione) - 1} archi:", color="green")
+        )
+
+        for i in range(len(soluzione) - 1):
+            u = soluzione[i]
+            v = soluzione[i + 1]
+            peso = self._model.getPesoArco(u, v)
+            self._view.txt_result.controls.append(
+                ft.Text(f"{u.Name} -> {v.Name}: costo {peso}")
+            )
+
+        self._view.update_page()
+
 
